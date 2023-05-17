@@ -74,13 +74,15 @@
 {% endmacro %}
 
 {% macro clickhouse__drop_relation(relation, obj_type='table') -%}
-  {% call statement('drop_relation', auto_begin=False) -%}
-    drop {{ obj_type }} if exists {{ relation }}_local {{ on_cluster_clause()}}
-  {%- endcall %}
+  {% if relation is not none %}
+    {% call statement('drop_relation', auto_begin=False) -%}
+      drop {{ obj_type }} if exists {{ relation }}_local {{ on_cluster_clause() }}
+    {%- endcall %}
 
-  {% call statement('drop_relation', auto_begin=False) -%}
-    drop {{ obj_type }} if exists {{ relation }} {{ on_cluster_clause()}}
-  {%- endcall %}
+    {% call statement('drop_relation', auto_begin=False) -%}
+      drop {{ obj_type }} if exists {{ relation }} {{ on_cluster_clause() }}
+    {%- endcall %}
+  {% endif %}
 {% endmacro %}
 
 {% macro clickhouse__rename_relation(from_relation, to_relation, obj_type='table') -%}
