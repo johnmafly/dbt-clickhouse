@@ -195,12 +195,7 @@
     )
 {%- endmacro %}
 
-{% macro create_distributed_table(relation) -%}
-    {%- set sharding_key = config.get('sharding_key', 'rand()') -%}
 
-    create table if not exists {{ relation.include(database=False) }} {{ on_cluster_clause()}} as {{ relation.include(database=False) }}_local
-      engine = Distributed({{ adapter.get_clickhouse_cluster_name() }}, {{ relation.schema }}, {{ relation.identifier }}_local, sipHash64({{ sharding_key }}))
-{%- endmacro %}
 
 {% macro clickhouse__insert_into(target_relation, sql) %}
   {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
