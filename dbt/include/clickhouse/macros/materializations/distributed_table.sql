@@ -2,6 +2,8 @@
 
   {%- set existing_relation = load_cached_relation(this) -%}
   {%- set target_relation = this.incorporate(type='table') -%}
+  {{ log(existing_relation) }}
+  {{ log(target_relation) }}
   {%- set backup_relation = none -%}
   {%- set preexisting_backup_relation = none -%}
   {%- set preexisting_intermediate_relation = none -%}
@@ -66,10 +68,8 @@
 
 {% endmaterialization %}
 
-{% macro create_distributed_table_or_empty(temporary, relation, sql) -%}
+{% macro create_distributed_remote_table_or_empty(temporary, relation, sql) -%}
     {%- set sql_header = config.get('sql_header', none) -%}
-    {%- set remote_database = config.get('remote_database', relation.identifier+'_local') -%}
-    {%- set sharding_key = config.get('sharding_key', 'rand()') -%}
 
     {{ sql_header if sql_header is not none }}
 
@@ -80,9 +80,9 @@
         {{ partition_cols(label="partition by") }}
         {{ adapter.get_model_settings(model) }}
     {%- else %}
-        create table {{ relation.include(database=False) }}
+        create table {{ relation.include(database=False) }}_local
         {{ on_cluster_clause()}}
-        {{ distributed_engine_clause(relation.schema, remote_database, sharding_key) }}
+        {{ engine_clause() }}
         {{ order_cols(label="order by") }}
         {{ primary_key_clause(label="primary key") }}
         {{ partition_cols(label="partition by") }}
@@ -98,7 +98,7 @@
 
 
 {% macro distributed_engine_clause(schema, remote_database, sharding_key) %}
-    engine = ({{adapter.get_clickhouse_cluster_name()}}, {{schema}}, {{remote_database}}, {{sharding_key}})
+    engine = Distributed({{adapter.get_clickhouse_cluster_name()}}, {{schema}}, {{remote_database}}, {{sharding_key}})
 {%- endmacro %}
 
 
@@ -106,23 +106,33 @@
     {{ return(create_distributed_table_as(temporary, relation, sql)) }}
 {%- endmacro %}
 
-{% macro create_distributed_table_as(temporary, relation, compiled_code, language='sql') -%}
-  {# backward compatibility for create_table_as that does not support language #}
-  {% if language == "sql" %}
-    {{ adapter.dispatch('create_distributed_table_as', 'dbt')(temporary, relation, compiled_code)}}
-  {% else %}
-    {{ adapter.dispatch('create_distributed_table_as', 'dbt')(temporary, relation, compiled_code, language) }}
-  {% endif %}
 
-{%- endmacro %}
-{% macro clickhouse__create_distributed_table_as(temporary, relation, sql) -%}
-    {% set create_table = create_distributed_table_or_empty(temporary, relation, sql) %}
+{% macro create_distributed_table_as(temporary, relation, sql) -%}
+    {% set create_remote_table = create_distributed_remote_table_or_empty(temporary, relation, sql) %}
     {% if adapter.is_before_version('22.7.1.2484') -%}
         {{ create_table }}
     {%- else %}
-        {% call statement('create_table_empty') %}
-            {{ create_table }}
+        {% call statement('create_remote_table') %}
+            {{ create_remote_table }}
+        {% endcall %}
+        {% call statement('create_distributed_table') %}
+            {{ create_distributed_table(relation) }}
         {% endcall %}
         {{ clickhouse__insert_into(relation.include(database=False), sql) }}
+
     {%- endif %}
+{%- endmacro %}
+
+{% macro create_distributed_persistent_table(target_relation, intermediate_relation) -%}
+    {%- set sharding_key = config.get('sharding_key', 'rand()') -%}
+    create table if not exists {{ intermediate_relation.include(database=False) }} {{ on_cluster_clause() }} as {{ intermediate_relation.include(database=False) }}_local
+    engine = Distributed({{ adapter.get_clickhouse_cluster_name() }}, {{ target_relation.schema }}, {{ target_relation.identifier }}_local, sipHash64({{ sharding_key }}))
+
+{%- endmacro %}
+
+{% macro create_distributed_table(relation) -%}
+    {%- set sharding_key = config.get('sharding_key', 'rand()') -%}
+    create table if not exists {{ relation.include(database=False) }} {{ on_cluster_clause()}} as {{ relation.include(database=False) }}_local
+      engine = Distributed({{ adapter.get_clickhouse_cluster_name() }}, {{ relation.schema }}, {{ relation.identifier }}_local, sipHash64({{ sharding_key }}))
+
 {%- endmacro %}

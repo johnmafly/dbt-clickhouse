@@ -31,6 +31,10 @@
   {% if existing_relation is none %}
     -- No existing table, simply create a new one
     {% call statement('main') %}
+        -- drop logs__dbt_tmp_local
+        {{ clickhouse__drop_relation(intermediate_relation) }}
+        -- drop logs__dbt_tmp
+        {{ clickhouse__drop_relation(target_relation) }}
         {{ get_create_distributed_table_as_sql(False, target_relation, sql) }}
     {% endcall %}
 
@@ -39,7 +43,7 @@
     {% call statement('main') %}
         -- drop __dbt_tmp_local
         {{ clickhouse__drop_relation(intermediate_relation) }}
-        {{ get_create_distribute_table_as_sql(False, intermediate_relation, sql) }}
+        {{ get_create_distributed_table_as_sql(False, intermediate_relation, sql) }}
     {% endcall %}
     {% set need_swap = true %}
 
@@ -79,9 +83,17 @@
 
   {% if need_swap %}
       {% if existing_relation.can_exchange %}
+        -- if existing_relation.can_exchange
+          {% call statement('drop_distributed_temp_table') %}
+        drop table if exists {{intermediate_relation}} {{ on_cluster_clause() }}
+      {% endcall %}
+      {% call statement('drop_distributed_temp_table') %}
+        {{create_distributed_persistent_table(target_relation, intermediate_relation)}}
+      {% endcall %}
         {% do adapter.rename_relation(intermediate_relation, backup_relation) %}
         {% do exchange_tables_atomic(backup_relation, target_relation) %}
       {% else %}
+        -- else existing_relation.can_exchange
         {% do adapter.rename_relation(target_relation, backup_relation) %}
         {% do adapter.rename_relation(intermediate_relation, target_relation) %}
       {% endif %}
@@ -161,6 +173,7 @@
     {% set new_data_relation = existing_relation.incorporate(path={"identifier": model['name']
        + '__dbt_new_data_' + invocation_id.replace('-', '_')}) %}
     {{ clickhouse__drop_relation(new_data_relation) }}
+    -- clickhouse__distributed_incremental_delete_insert
     {% call statement('main') %}
         {{ get_create_distributed_table_as_sql(False, new_data_relation, sql) }}
     {% endcall %}
@@ -183,6 +196,3 @@
 {% endmacro %}
 
 
-{% macro get_create_distribute_table_as_sql(temporary, relation, sql) -%}
-  {{ return(create_table_as(temporary, relation, sql)) }}
-{% endmacro %}
