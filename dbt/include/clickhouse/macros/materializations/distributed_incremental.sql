@@ -29,6 +29,10 @@
   {% set to_drop = [] %}
 
   {% if existing_relation is none %}
+                {{log('existing_relation')}}
+    {{log('existing_relation')}}
+    {{log('existing_relation')}}
+    {{log('existing_relation')}}
     -- No existing table, simply create a new one
     {% call statement('main') %}
         -- drop logs__dbt_tmp_local
