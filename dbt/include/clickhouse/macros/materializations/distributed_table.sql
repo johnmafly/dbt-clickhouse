@@ -92,7 +92,7 @@
         {%- endif %}
     {%- endif %}
     as (
-        {{ sql }}
+        {{ batch_insert_mask(sql) }}
     )
 {%- endmacro %}
 
