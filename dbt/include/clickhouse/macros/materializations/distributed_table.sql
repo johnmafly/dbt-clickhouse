@@ -112,14 +112,19 @@
     {% if adapter.is_before_version('22.7.1.2484') -%}
         {{ create_table }}
     {%- else %}
-        {% call statement('create_remote_table') %}
+        {{ log('create_remote_table') }}
+        {% call statement('main') %}
             {{ create_remote_table }}
         {% endcall %}
-        {% call statement('create_distributed_table') %}
+        {{ log('created_remote_table') }}
+        {{ log('create_distributed_table') }}
+        {% call statement('main') %}
             {{ create_distributed_table(relation) }}
         {% endcall %}
+        {{ log('created_distributed_table') }}
+        {{ log('clickhouse__insert_into') }}
         {{ clickhouse__insert_into(relation.include(database=False), sql) }}
-
+        {{ log('clickhouse__inserted_into') }}
     {%- endif %}
 {%- endmacro %}
 
