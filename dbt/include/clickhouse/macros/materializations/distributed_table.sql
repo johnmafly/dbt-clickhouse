@@ -113,14 +113,14 @@
         {{ create_table }}
     {%- else %}
         {{ log('create_remote_table') }}
-        {% call statement('main') %}
+        {%- call statement('create_remote_table') -%}
             {{ create_remote_table }}
-        {% endcall %}
+        {%- endcall %}
         {{ log('created_remote_table') }}
         {{ log('create_distributed_table') }}
-        {% call statement('main') %}
+        {%- call statement('create_distributed_table') -%}
             {{ create_distributed_table(relation) }}
-        {% endcall %}
+        {%- endcall -%}
         {{ log('created_distributed_table') }}
         {{ log('clickhouse__insert_into') }}
         {{ clickhouse__insert_into(relation.include(database=False), sql) }}

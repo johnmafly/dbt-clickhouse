@@ -30,19 +30,21 @@
 
   {% if existing_relation is none %}
     {{log('existing_relation')}}
-    -- No existing table, simply create a new one
-            -- drop logs__dbt_tmp_local
-    {% do clickhouse__drop_relation(intermediate_relation) }}
-        -- drop logs__dbt_tmp
-    {% do clickhouse__drop_relation(target_relation) }}
-    {% call statement('main') %}
+    {%- call statement('main') -%}
+        {{log('drop_relation(intermediate_relation)')}}
+        {%- do clickhouse__drop_relation(intermediate_relation) -%}
+        {{log('get_create_distributed_table_as_sql')}}
         {{ get_create_distributed_table_as_sql(False, target_relation, sql) }}
-    {% endcall %}
+    {%- endcall -%}
 
   {% elif full_refresh_mode %}
+    {{log('full_refresh_mode')}}
     -- Completely replacing the old table, so create a temporary table and then swap it
-    {% do clickhouse__drop_relation(intermediate_relation) %}
     {% call statement('main') %}
+        {{log('drop_relation(intermediate_relation)')}}
+        {% do clickhouse__drop_relation(intermediate_relation) %}
+
+        {{log('get_create_distributed_table_as_sql')}}
         {{ get_create_distributed_table_as_sql(False, intermediate_relation, sql) }}
     {% endcall %}
     {% set need_swap = true %}
