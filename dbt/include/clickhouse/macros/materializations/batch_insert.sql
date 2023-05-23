@@ -19,7 +19,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro iterate_batch_insert_seeds(sql_seeds) -%}
+{% macro iterate_batch_insert_seeds(sql_seeds, batch_incremental = False) -%}
     {{ config.set('batch_insert', True) }}
     {%- set target_relation = this -%}
     {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
@@ -39,8 +39,21 @@
             {% endif %}
         {% endfor %}
     {% else %}
-        {%- set seeds = query_batch_insert_seeds(sql_seeds) -%}
-        {{ caller(seeds|first) }}
+        {% if batch_incremental %}
+            {%- set seeds = query_batch_insert_seeds(sql_seeds) -%}
+            {{ caller(seeds|first) }}
+
+            {% for seed in seeds %}
+                {% if not loop.first %}
+                    /!-MAGIC:BATCH_INSERT
+                    {{ caller(seed) }}
+                    MAGIC:BATCH_INSERT-!/
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {%- set seeds = query_batch_insert_seeds(sql_seeds) -%}
+            {{ caller(seeds|first) }}
+        {% endif %}
     {% endif %}
 {%- endmacro %}
 
