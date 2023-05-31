@@ -86,6 +86,7 @@
         {{ order_cols(label="order by") }}
         {{ primary_key_clause(label="primary key") }}
         {{ partition_cols(label="partition by") }}
+        {{ ttl_clause(label="ttl") }}
         {{ adapter.get_model_settings(model) }}
         {% if not adapter.is_before_version('22.7.1.2484') -%}
             empty
