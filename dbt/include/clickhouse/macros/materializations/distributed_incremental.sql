@@ -77,6 +77,7 @@
     {% elif incremental_strategy == 'delete_insert' %}
       {% do clickhouse__distributed_incremental_delete_insert(existing_relation, unique_key, incremental_predicates) %}
     {% elif incremental_strategy == 'append' %}
+      {{log('append model')}}
       {% call statement('main') %}
         {{ clickhouse__insert_into(target_relation, sql) }}
       {% endcall %}
@@ -86,9 +87,11 @@
   {% if need_swap %}
       {% if existing_relation.can_exchange %}
         -- if existing_relation.can_exchange
-          {% call statement('drop_distributed_temp_table') %}
+      {{log('drop_distributed_temp_table1')}}
+      {% call statement('drop_distributed_temp_table') %}
         drop table if exists {{intermediate_relation}} {{ on_cluster_clause() }}
       {% endcall %}
+      {{log('drop_distributed_temp_table2')}}
       {% call statement('drop_distributed_temp_table') %}
         {{create_distributed_persistent_table(target_relation, intermediate_relation)}}
       {% endcall %}

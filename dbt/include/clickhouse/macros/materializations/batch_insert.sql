@@ -7,10 +7,16 @@
 {%- endmacro %}
 
 {% macro query_batch_insert_seeds(sql) -%}
+{{log('-----=================================')}}
+
     {% call statement("batch_insert_seeds", fetch_result=True) %}
         {{ sql }}
     {%- endcall %}
-
+{{log('=================================')}}
+{{log(sql)}}
+{{log(sql)}}
+{{log(sql)}}
+{{log(sql)}}
     {% if execute %}
         {% set results = load_result('batch_insert_seeds') %}
         {{ return(results.table.rows) }}
