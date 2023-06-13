@@ -40,6 +40,12 @@
     {% call statement('main') -%}
       {{ get_create_distributed_table_as_sql(False, backup_relation, sql) }}
     {%- endcall %}
+    {% call statement('main') %}
+        drop table if exists {{backup_relation}} {{ on_cluster_clause() }}
+    {% endcall %}
+    {% call statement('main') %}
+        {{create_distributed_persistent_table(target_relation, backup_relation)}}
+    {% endcall %}
     {% do exchange_tables_atomic(backup_relation, existing_relation) %}
   {% else %}
     -- We have to use an intermediate and rename accordingly
