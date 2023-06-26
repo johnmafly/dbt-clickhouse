@@ -36,7 +36,6 @@
     {% endcall %}
 
   {% elif full_refresh_mode %}
-    
     -- Completely replacing the old table, so create a temporary table and then swap it
     {% call statement('main') %}
         {{ get_create_table_as_sql(False, intermediate_relation, sql) }}
@@ -183,7 +182,8 @@
 {% macro clickhouse__incremental_delete_insert(existing_relation, unique_key, incremental_predicates) %}
     {%- set is_cluster = adapter.is_clickhouse_cluster_mode() -%}
 
-    {% set new_data_relation = existing_relation.incorporate(path={"identifier": model['name'] + '__dbt_new_data'}) %}
+    {% set new_data_relation = existing_relation.incorporate(path={"identifier": model['name']
+       + '__dbt_new_data_' + invocation_id.replace('-', '_')}) %}
     {{ drop_relation_if_exists(new_data_relation) }}
     {% call statement('main') %}
         {{ get_create_table_as_sql(False, new_data_relation, sql) }}

@@ -104,7 +104,7 @@
   {% call statement('rename_relation') %}
     rename {{ obj_type }} {{ from_relation }} to {{ to_relation }} {{ on_cluster_clause()}}
   {% endcall %}
-  
+
 {% endmacro %}
 
 {% macro clickhouse__truncate_relation(relation) -%}
@@ -113,7 +113,7 @@
   {% if is_cluster -%}
     alter table {{ relation }}_local {{ on_cluster_clause()}} modify column {{ adapter.quote(column_name) }} {{ new_column_type }}
   {%- endif %}
-  
+
   alter table {{ relation }} {{ on_cluster_clause()}} modify column {{ adapter.quote(column_name) }} {{ new_column_type }}
 
   {% call statement('truncate_relation') -%}
@@ -154,7 +154,7 @@
     {% if is_cluster -%}
       alter table {{ relation }}_local {{ on_cluster_clause()}} modify column {{ adapter.quote(column_name) }} {{ new_column_type }}
     {%- endif %}
-    
+
     alter table {{ relation }} {{ on_cluster_clause()}} modify column {{ adapter.quote(column_name) }} {{ new_column_type }}
   {% endcall %}
 {% endmacro %}

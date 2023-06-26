@@ -6,7 +6,7 @@ from typing import Any, Optional, Tuple
 import agate
 import dbt.exceptions
 from dbt.adapters.sql import SQLConnectionManager
-from dbt.contracts.connection import Connection
+from dbt.contracts.connection import AdapterResponse, Connection
 
 from dbt.adapters.clickhouse.dbclient import ChRetryableException, get_db_client
 from dbt.adapters.clickhouse.logger import logger
@@ -74,14 +74,13 @@ class ClickHouseConnectionManager(SQLConnectionManager):
 
     def execute(
         self, sql: str, auto_begin: bool = False, fetch: bool = False
-    ) -> Tuple[str, agate.Table]:
+    ) -> Tuple[AdapterResponse, agate.Table]:
         # Don't try to fetch result of clustered DDL responses, we don't know what to do with them
         if fetch and ddl_re.match(sql):
             fetch = False
         if "create table" in sql:    
             logger.info(f'Executing raw sql: {sql}...')
         result = None, None
-            
         for sql_statement in sql.strip("; ").strip().split(';'):
             sql_statement = '\n'.join((line if '-- depends_on: ' not in line else '') for line in sql_statement.split(r"\n"))
             sql_statement = sql_statement.strip()
@@ -109,8 +108,7 @@ class ClickHouseConnectionManager(SQLConnectionManager):
                     )
                 else:
                     table = dbt.clients.agate_helper.empty_table()
-                result = status, table
-                
+                result = AdapterResponse(_message=status), table
         return result
 
     def add_query(
