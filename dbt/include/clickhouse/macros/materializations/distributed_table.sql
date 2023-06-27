@@ -104,10 +104,6 @@
 {%- endmacro %}
 
 
-{% macro distributed_engine_clause(schema, remote_database, sharding_key) %}
-    engine = Distributed({{adapter.get_clickhouse_cluster_name()}}, {{schema}}, {{remote_database}}, {{sharding_key}})
-{%- endmacro %}
-
 
 {% macro get_create_distributed_table_as_sql(temporary, relation, sql) %}
     {{ return(create_distributed_table_as(temporary, relation, sql)) }}
