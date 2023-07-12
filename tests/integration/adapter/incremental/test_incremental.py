@@ -49,7 +49,7 @@ class TestSimpleIncremental:
         return {
             "unique_source_one.sql": uniq_source_model,
             "unique_incremental_one.sql": uniq_incremental_model,
-            "_sources.yml": uniq_schema,
+            "schema.yml": uniq_schema,
         }
 
     def test_simple_incremental(self, project):
@@ -144,7 +144,7 @@ class TestInsertsOnlyIncrementalMaterialization(BaseIncremental):
         incremental_sql = config_materialized_incremental + model_incremental
         return {
             "incremental.sql": incremental_sql,
-            "_sources.yml": schema_base_yml,
+            "schema.yml": schema_base_yml,
         }
 
 

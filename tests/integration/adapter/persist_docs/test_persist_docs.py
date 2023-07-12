@@ -39,7 +39,7 @@ class BasePersistDocsBase:
     def properties(self):
         return {
             "my_fun_docs.md": _DOCS__MY_FUN_DOCS,
-            "_sources.yml": _PROPERTIES__SCHEMA_YML,
+            "schema.yml": _PROPERTIES__SCHEMA_YML,
         }
 
     def _assert_common_comments(self, *comments):
@@ -136,7 +136,7 @@ class BasePersistDocsColumnMissing(BasePersistDocsBase):
 
     @pytest.fixture(scope="class")
     def properties(self):
-        return {"_sources.yml": _PROPERITES__SCHEMA_MISSING_COL}
+        return {"schema.yml": _PROPERITES__SCHEMA_MISSING_COL}
 
     def test_missing_column(self, project):
         run_dbt(["docs", "generate"])

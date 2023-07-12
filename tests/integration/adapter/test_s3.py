@@ -64,7 +64,7 @@ class TestS3:
         return {
             "s3_taxis_source.sql": s3_taxis_source,
             "s3_taxis_inc.sql": s3_taxis_inc,
-            "_sources.yml": schema_yaml,
+            "schema.yml": schema_yaml,
         }
 
     def test_s3_incremental(self, project):
