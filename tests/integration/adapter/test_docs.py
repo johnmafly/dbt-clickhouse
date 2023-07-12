@@ -276,7 +276,7 @@ class TestBaseDocsGenReferences(BaseDocsGenReferences):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "schema.yml": ref_models__schema_yml,
+            "_sources.yml": ref_models__schema_yml,
             "sources.yml": ref_sources__schema_yml,
             "seed_summary.sql": ref_models__seed_summary_sql,
             "view_summary.sql": ref_models__view_summary_sql,

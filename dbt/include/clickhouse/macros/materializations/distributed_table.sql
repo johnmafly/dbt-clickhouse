@@ -100,6 +100,7 @@
     {%- endif %}
     as (
         {{ batch_insert_mask(sql) }}
+        limit 1
     )
 {%- endmacro %}
 

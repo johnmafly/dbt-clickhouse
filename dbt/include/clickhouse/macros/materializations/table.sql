@@ -69,7 +69,12 @@
 {% macro engine_clause() %}
   {%- set is_cluster = adapter.is_clickhouse_cluster_mode() -%}
   {% if is_cluster -%}
-    engine = {{ 'Replicated' ~ config.get('engine', default='MergeTree()') | replace('MergeTree(', 'MergeTree(\'' ~ config.get('replica_path', default='/clickhouse/tables/{database}/' ~ config.get('alias', default='{table}') ~ '/{shard}/{uuid}')  ~ '\', \'{replica}\'') }}
+    {%set engine = 'Replicated' ~ config.get('engine', default='MergeTree()') | replace('MergeTree(', 'MergeTree(\'' ~ config.get('replica_path', default='/clickhouse/tables/{database}/' ~ config.get('alias', default='{table}') ~ '/{shard}/{uuid}')  ~ '\', \'{replica}\'') %}
+    {% if 'VersionedCollapsingMergeTree' in engine -%}
+        {{log('isVersionedCollapsingMergeTree')}}
+        {%set engine = engine | replace(')', ', _sign, _version)') %}
+    {% endif %}
+    engine = {{ engine }}
   {% else %}
     engine = {{ config.get('engine', default='MergeTree()') }}
   {%- endif %}

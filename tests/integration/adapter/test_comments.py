@@ -57,7 +57,7 @@ class TestBaseComment:
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "schema.yml": ref_models__schema_yml,
+            "_sources.yml": ref_models__schema_yml,
             "table_comment.sql": ref_models__table_comment_sql,
             "view_comment.sql": ref_models__view_comment_sql,
         }

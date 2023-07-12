@@ -53,9 +53,14 @@
     -- There are no updates/deletes or duplicate keys are allowed.  Simply add all of the new rows to the existing
     -- table. It is the user's responsibility to avoid duplicates.  Note that "inserts_only" is a ClickHouse adapter
     -- specific configurable that is used to avoid creating an expensive intermediate table.
-    {% call statement('main') %}
-        {{ clickhouse__insert_into(target_relation, sql) }}
-    {% endcall %}
+    {% set incremental_strategy = adapter.calculate_incremental_strategy(config.get('incremental_strategy'))  %}
+    {% if incremental_strategy == 'append' %}
+        {% call statement('main') %}
+            {{ clickhouse__insert_into(target_relation, sql) }}
+        {% endcall %}
+    {% else %}
+      {% do exceptions.raise_compiler_error('Cannot use incremental strategy ' + incremental_strategy + ' with inserts_only=True') %}
+    {% endif %}
 
   {% else %}
     {% set schema_changes = none %}
@@ -68,16 +73,16 @@
         {% do log('Schema changes detected, switching to legacy incremental strategy') %}
       {% endif %}
     {% endif %}
-    {% if incremental_strategy != 'delete_insert' and incremental_predicates %}
-      {% do exceptions.raise_compiler_error('Cannot apply incremental predicates with ' + incremental_strategy + ' strategy.') %}
-    {% endif %}
     {% if incremental_strategy == 'legacy' %}
       {% do clickhouse__distributed_incremental_legacy(existing_relation, intermediate_relation, schema_changes, unique_key) %}
       {% set need_swap = true %}
     {% elif incremental_strategy == 'delete_insert' %}
       {% do clickhouse__distributed_incremental_delete_insert(existing_relation, unique_key, incremental_predicates) %}
+    {% elif incremental_strategy == 'merge' %}
+      {% call statement('main') %}
+          {{ distributed_incremental_merge(target_relation, sql, unique_key) }}
+      {% endcall %}
     {% elif incremental_strategy == 'append' %}
-      {{log('append model')}}
       {% call statement('main') %}
         {{ clickhouse__insert_into(target_relation, sql) }}
       {% endcall %}
@@ -173,6 +178,45 @@
 
 {% endmacro %}
 
+{% macro distributed_incremental_merge(target_relation, sql, unique_key = None) %}
+    -- First create a temporary table for all of the new data
+  {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
+  {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
+
+  {%- set merge_columns -%}
+     {% if unique_key is none %}
+        {{ dest_cols_csv }}
+     {% else %}
+        {{ unique_key }}
+     {%endif%}
+  {%- endset %}
+
+  {%- set insert_into_sql -%}
+  insert into {{ target_relation }} ({{ dest_cols_csv }})
+  {%- endset %}
+
+  {{ insert_into_sql }}
+  {%- set renew_sql -%}
+    with iv_source_sql as (
+        -- Dbt Real Start Query Sql
+        {{ sql }}
+        -- Dbt Real End Query Sql
+    )
+    -- Default Start Get Min Block Time
+    ,(select min(block_time) from iv_source_sql) as min_block_time
+    -- Default End Get Min Block Time
+    select * from iv_source_sql
+    -- Merge Handle Sql
+    where ({{merge_columns}}) in (
+          select {{ merge_columns }} from iv_source_sql
+          except
+          select {{ merge_columns }}
+          from {{ this }}
+          where block_time >= min_block_time
+        )
+  {%endset%}
+  {{ batch_insert_unmask(renew_sql, insert_into_sql) }}
+{% endmacro %}
 
 {% macro clickhouse__distributed_incremental_delete_insert(existing_relation, unique_key, incremental_predicates) %}
     {% set new_data_relation = existing_relation.incorporate(path={"identifier": model['name']

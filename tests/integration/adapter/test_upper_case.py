@@ -38,7 +38,7 @@ class TestUpperCase:
            """
         return {
             "UPPER.sql": config_table_sql,
-            "schema.yml": schema_upper_yml,
+            "_sources.yml": schema_upper_yml,
         }
 
     @pytest.fixture(scope="class")

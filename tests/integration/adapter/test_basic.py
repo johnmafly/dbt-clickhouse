@@ -90,7 +90,7 @@ class TestMergeTreeTableMaterialization(BaseSimpleMaterializations):
         base_table_sql = config_materialized_table + model_base
         return {
             "table_model.sql": base_table_sql,
-            "schema.yml": schema_base_yml,
+            "_sources.yml": schema_base_yml,
         }
 
     def test_base(self, project):
@@ -116,7 +116,7 @@ class TestCSVSeed:
     @pytest.fixture(scope="class")
     def seeds(self):
         return {
-            "schema.yml": seeds_schema_yml,
+            "_sources.yml": seeds_schema_yml,
             "boolean.csv": seeds_boolean_csv,
             "empty.csv": seeds_empty_csv,
         }
