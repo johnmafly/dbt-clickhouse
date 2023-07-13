@@ -58,6 +58,10 @@
         {% call statement('main') %}
             {{ clickhouse__insert_into(target_relation, sql) }}
         {% endcall %}
+    {% elif incremental_strategy == 'merge' %}
+        {% call statement('main') %}
+            {{ distributed_incremental_merge(target_relation, sql) }}
+        {% endcall %}
     {% else %}
       {% do exceptions.raise_compiler_error('Cannot use incremental strategy ' + incremental_strategy + ' with inserts_only=True') %}
     {% endif %}
