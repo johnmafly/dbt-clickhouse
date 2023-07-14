@@ -201,8 +201,7 @@
         -- Dbt Real End Query Sql
     )
     -- Default Start Get Min Block Time
-    ,(select min(block_time) from iv_source_sql) as min_block_time
-    ,iv_source_data as (select * from {{this}} where min_block_time <= block_time)
+    ,iv_source_data as (select * from {{this}} where block_time >= date_trunc('day', now() - interval '1 day'))
     -- Default End Get Min Block Time
     select * from iv_source_sql
     {% if unique_key is none %}
