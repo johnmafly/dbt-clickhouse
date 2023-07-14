@@ -210,10 +210,10 @@
     select * from iv_source_data
     {% else %}
     -- Merge Handle Sql
-    where ({{merge_columns}}) in (
-      select {{ merge_columns }} from iv_source_sql
+    where ({{unique_key}}) in (
+      select {{ unique_key }} from iv_source_sql
       except
-      select {{ merge_columns }}
+      select {{ unique_key }}
       from iv_source_data
     )
     {%endif%}
