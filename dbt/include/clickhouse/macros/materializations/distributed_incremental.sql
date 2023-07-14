@@ -208,6 +208,7 @@
     )
     -- Default Start Get Min Block Time
     ,(select min(block_time) from iv_source_sql) as min_block_time
+    ,iv_source_data as (select * from {{this}} where min_block_time <= block_time)
     -- Default End Get Min Block Time
     select * from iv_source_sql
     -- Merge Handle Sql
@@ -215,8 +216,7 @@
           select {{ merge_columns }} from iv_source_sql
           except
           select {{ merge_columns }}
-          from {{ this }}
-          where block_time >= min_block_time
+          from iv_source_data
         )
   {%endset%}
   {{ batch_insert_unmask(renew_sql, insert_into_sql) }}
