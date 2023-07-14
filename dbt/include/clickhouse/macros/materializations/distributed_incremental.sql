@@ -187,13 +187,7 @@
   {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
   {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
 
-  {%- set merge_columns -%}
-     {% if unique_key is none %}
-        {{ dest_cols_csv }}
-     {% else %}
-        {{ unique_key }}
-     {%endif%}
-  {%- endset %}
+
 
   {%- set insert_into_sql -%}
   insert into {{ target_relation }} ({{ dest_cols_csv }})
@@ -211,13 +205,18 @@
     ,iv_source_data as (select * from {{this}} where min_block_time <= block_time)
     -- Default End Get Min Block Time
     select * from iv_source_sql
+    {% if unique_key is none %}
+    except
+    select * from iv_source_data
+    {% else %}
     -- Merge Handle Sql
     where ({{merge_columns}}) in (
-          select {{ merge_columns }} from iv_source_sql
-          except
-          select {{ merge_columns }}
-          from iv_source_data
-        )
+      select {{ merge_columns }} from iv_source_sql
+      except
+      select {{ merge_columns }}
+      from iv_source_data
+    )
+    {%endif%}
   {%endset%}
   {{ batch_insert_unmask(renew_sql, insert_into_sql) }}
 {% endmacro %}
