@@ -201,7 +201,7 @@
         -- Dbt Real End Query Sql
     )
     -- Default Start Get Min Block Time
-    ,iv_source_data as (select * from {{this}} where block_time >= date_trunc('minute', now() - interval '10 minute'))
+    ,iv_source_data as (select * from {{this}} where {{config.get('merge_condition')}})
     -- Default End Get Min Block Time
     select * from iv_source_sql
     {% if unique_key is none %}
