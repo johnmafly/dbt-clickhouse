@@ -190,7 +190,7 @@
 
 
   {%- set insert_into_sql -%}
-  insert into {{ target_relation }} ({{ dest_cols_csv }})
+  insert into {{ target_relation }}{{config.get('is_local', '')}} ({{ dest_cols_csv }})
   {%- endset %}
 
   {{ insert_into_sql }}
