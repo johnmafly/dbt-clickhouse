@@ -201,7 +201,7 @@
         -- Dbt Real End Query Sql
     )
     -- Default Start Get Min Block Time
-    ,iv_source_data as (select * from {{this}} where {{config.get('merge_condition')}})
+    ,iv_source_data as (select * from {{this}}{{config.get('is_local', '')}} where {{config.get('merge_condition')}})
     -- Default End Get Min Block Time
     select * from iv_source_sql
     {% if unique_key is none %}
